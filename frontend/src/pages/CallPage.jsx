@@ -4,6 +4,7 @@ import useAuthUser from "../hooks/useAuthUser";
 import { useQuery } from "@tanstack/react-query";
 import { getStreamToken } from "../lib/api";
 import LiveTranslate from "../components/LiveTranslate";
+import ParticipantLanguageDisplay from "../components/ParticipantLanguageDisplay";
 
 import {
   StreamVideo,
@@ -83,6 +84,7 @@ const CallPage = () => {
           <StreamVideo client={client}>
             <StreamCall call={call}>
               <CallContent />
+              <ParticipantLanguageDisplay />
               <LiveTranslate />
             </StreamCall>
           </StreamVideo>

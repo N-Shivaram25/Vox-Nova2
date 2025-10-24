@@ -25,6 +25,8 @@ export default function LiveTranslate() {
   const call = useCall();
   const [enabled, setEnabled] = useState(true);
   const [targetLang, setTargetLang] = useState("en");
+  const [transcript, setTranscript] = useState("");
+  const [translatedText, setTranslatedText] = useState("");
   const wsRef = useRef(null);
   const audioContextRef = useRef(null);
   const processorRef = useRef(null);
@@ -79,12 +81,16 @@ export default function LiveTranslate() {
         socket.onmessage = async (event) => {
           try {
             const msg = JSON.parse(event.data);
-            const transcript = msg?.channel?.alternatives?.[0]?.transcript;
+            const transcriptText = msg?.channel?.alternatives?.[0]?.transcript;
             const isFinal = msg?.is_final;
-            if (!transcript || !isFinal) return;
+            if (!transcriptText || !isFinal) return;
 
-            const translated = await translateText(transcript, SOURCE_LANG, targetLang);
-            if (translated) await playTTS(translated);
+            setTranscript(transcriptText);
+            const translated = await translateText(transcriptText, SOURCE_LANG, targetLang);
+            if (translated) {
+              setTranslatedText(translated);
+              await playTTS(translated);
+            }
           } catch (e) {
             // non-JSON pings from server
           }
@@ -138,20 +144,55 @@ export default function LiveTranslate() {
   };
 
   return (
-    <div style={{ position: "absolute", top: 8, right: 8, zIndex: 50 }} className="bg-black/40 text-white rounded px-3 py-2 flex items-center gap-2">
-      <label className="text-sm">Realtime Translate</label>
-      <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
-      <select value={targetLang} onChange={(e) => setTargetLang(e.target.value)} className="bg-transparent border rounded px-2 py-1 text-sm">
-        {LANGUAGES.map((name) => {
-          const code = LANGUAGE_CODE_MAP[name.toLowerCase()] || "en";
-          return (
-            <option key={code} value={code}>
-              {name}
-            </option>
-          );
-        })}
-      </select>
-    </div>
+    <>
+      {/* Translation Controls */}
+      <div style={{ position: "absolute", top: 8, right: 8, zIndex: 50 }} className="bg-black/80 text-white rounded-lg px-4 py-3 flex flex-col gap-2 min-w-[280px]">
+        <div className="flex items-center justify-between gap-3">
+          <label className="text-sm font-semibold">Live Translation</label>
+          <input 
+            type="checkbox" 
+            checked={enabled} 
+            onChange={(e) => setEnabled(e.target.checked)} 
+            className="toggle toggle-sm toggle-success"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs opacity-70">Select Language</label>
+          <select 
+            value={targetLang} 
+            onChange={(e) => setTargetLang(e.target.value)} 
+            className="select select-sm bg-black/50 border-white/20 text-white w-full"
+          >
+            {LANGUAGES.map((name) => {
+              const code = LANGUAGE_CODE_MAP[name.toLowerCase()] || "en";
+              return (
+                <option key={code} value={code} className="bg-gray-900">
+                  {name}
+                </option>
+              );
+            })}
+          </select>
+        </div>
+      </div>
+
+      {/* Live Captions */}
+      {enabled && (transcript || translatedText) && (
+        <div style={{ position: "absolute", bottom: 80, left: "50%", transform: "translateX(-50%)", zIndex: 50 }} className="bg-black/90 text-white rounded-lg px-6 py-4 max-w-2xl">
+          {transcript && (
+            <div className="mb-2">
+              <p className="text-xs opacity-60 mb-1">Original:</p>
+              <p className="text-sm">{transcript}</p>
+            </div>
+          )}
+          {translatedText && (
+            <div>
+              <p className="text-xs opacity-60 mb-1">Translated:</p>
+              <p className="text-base font-medium text-green-400">{translatedText}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </>
   );
 }
 
