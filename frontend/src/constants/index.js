@@ -195,3 +195,20 @@ export const LANGUAGE_TO_FLAG = {
   turkish: "tr",
   dutch: "nl",
 };
+
+export const LANGUAGE_CODE_MAP = {
+  english: "en",
+  spanish: "es",
+  french: "fr",
+  german: "de",
+  mandarin: "zh",
+  japanese: "ja",
+  korean: "ko",
+  hindi: "hi",
+  russian: "ru",
+  portuguese: "pt",
+  arabic: "ar",
+  italian: "it",
+  turkish: "tr",
+  dutch: "nl",
+};

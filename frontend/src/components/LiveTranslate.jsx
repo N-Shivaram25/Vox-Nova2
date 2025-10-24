@@ -1,19 +1,30 @@
 import { useEffect, useRef, useState } from "react";
 import { useCall } from "@stream-io/video-react-sdk";
+import { LANGUAGES, LANGUAGE_CODE_MAP } from "../constants";
 
 const VOICE_MAP = {
   en: "UK English Female",
   es: "Spanish Female",
   hi: "Hindi Female",
   fr: "French Female",
+  de: "Deutsch Female",
+  zh: "Chinese Female",
+  ja: "Japanese Female",
+  ko: "Korean Female",
+  ru: "Russian Female",
+  pt: "Portuguese Female",
+  ar: "Arabic Female",
+  it: "Italian Female",
+  tr: "Turkish Female",
+  nl: "Dutch Female",
 };
 
-const SOURCE_LANG_GUESS = "en"; // simple default; could be made dynamic with Deepgram language hints
+const SOURCE_LANG = "auto"; // let translation auto-detect source
 
 export default function LiveTranslate() {
   const call = useCall();
   const [enabled, setEnabled] = useState(true);
-  const [targetLang, setTargetLang] = useState("es");
+  const [targetLang, setTargetLang] = useState("en");
   const wsRef = useRef(null);
   const audioContextRef = useRef(null);
   const processorRef = useRef(null);
@@ -71,7 +82,7 @@ export default function LiveTranslate() {
             const isFinal = msg?.is_final;
             if (!transcript || !isFinal) return;
 
-            const translated = await translateText(transcript, SOURCE_LANG_GUESS, targetLang);
+            const translated = await translateText(transcript, SOURCE_LANG, targetLang);
             if (translated) speakTranslated(translated, targetLang);
           } catch (e) {
             // non-JSON pings from server
@@ -123,10 +134,14 @@ export default function LiveTranslate() {
       <label className="text-sm">Realtime Translate</label>
       <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
       <select value={targetLang} onChange={(e) => setTargetLang(e.target.value)} className="bg-transparent border rounded px-2 py-1 text-sm">
-        <option value="en">English</option>
-        <option value="es">Spanish</option>
-        <option value="hi">Hindi</option>
-        <option value="fr">French</option>
+        {LANGUAGES.map((name) => {
+          const code = LANGUAGE_CODE_MAP[name.toLowerCase()] || "en";
+          return (
+            <option key={code} value={code}>
+              {name}
+            </option>
+          );
+        })}
       </select>
     </div>
   );
@@ -145,7 +160,7 @@ function floatTo16BitPCM(float32Array) {
 
 async function translateText(text, source, target) {
   try {
-    const res = await fetch("https://translate.argosopentech.com/translate", {
+    const res = await fetch("/api/translate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ q: text, source, target }),
