@@ -29,6 +29,7 @@ export default function LiveTranslate() {
   const audioContextRef = useRef(null);
   const processorRef = useRef(null);
   const sourceRef = useRef(null);
+  const audioRef = useRef(null);
 
   useEffect(() => {
     if (!enabled || !call) return;
@@ -83,7 +84,7 @@ export default function LiveTranslate() {
             if (!transcript || !isFinal) return;
 
             const translated = await translateText(transcript, SOURCE_LANG, targetLang);
-            if (translated) speakTranslated(translated, targetLang);
+            if (translated) await playTTS(translated);
           } catch (e) {
             // non-JSON pings from server
           }
@@ -107,6 +108,13 @@ export default function LiveTranslate() {
       cancelled = true;
       try { wsRef.current && wsRef.current.close(); } catch {}
       cleanupAudio();
+      try {
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.src = "";
+          audioRef.current = null;
+        }
+      } catch {}
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, call]);
@@ -173,13 +181,27 @@ async function translateText(text, source, target) {
   }
 }
 
-function speakTranslated(text, targetLang) {
-  const voice = VOICE_MAP[targetLang] || VOICE_MAP.en;
-  if (window.responsiveVoice && window.responsiveVoice.speak) {
-    window.responsiveVoice.speak(text, voice);
-  } else if (window.speechSynthesis) {
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = targetLang;
-    window.speechSynthesis.speak(u);
+async function playTTS(text) {
+  try {
+    const res = await fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    if (audioRef.current) {
+      try { audioRef.current.pause(); } catch {}
+      audioRef.current.src = "";
+    }
+    const audio = new Audio(url);
+    audioRef.current = audio;
+    audio.play().catch(() => {});
+    audio.onended = () => {
+      URL.revokeObjectURL(url);
+    };
+  } catch (e) {
+    console.error("TTS playback failed", e);
   }
 }

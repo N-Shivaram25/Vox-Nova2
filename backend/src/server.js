@@ -9,6 +9,7 @@ import userRoutes from "./routes/user.route.js";
 import chatRoutes from "./routes/chat.route.js";
 import deepgramRoutes from "./routes/deepgram.route.js";
 import translateRoutes from "./routes/translate.route.js";
+import ttsRoutes from "./routes/tts.route.js";
 
 import { connectDB } from "./lib/db.js";
 
@@ -32,6 +33,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/deepgram", deepgramRoutes);
 app.use("/api/translate", translateRoutes);
+app.use("/api/tts", ttsRoutes);
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/dist")));
